@@ -1,0 +1,168 @@
+---
+title: "CleanDataCourseProject"
+author: "Chia-Hsun Cheng"
+date: "5/18/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Read data
+
+### Read metadata
+
+```{r}
+features <- read.csv('./UCI\ HAR\ Dataset/features.txt', sep="", header=FALSE)
+dim(features)
+head(features)
+
+activity_labels <- read.csv('./UCI\ HAR\ Dataset/activity_labels.txt', sep="", header=FALSE)
+activity_labels
+```
+
+### Read train and test data
+
+```{r}
+# Define read function
+read_data <- function(xPath, yPath, subjectPath, features, activity_labels) {
+  X <- read.csv(xPath, sep="", header=FALSE)
+dim(X)
+
+  Y <- read.csv(yPath, sep="", header=FALSE)
+dim(Y)
+  subjects <- read.csv(subjectPath, sep="", header=FALSE)
+  dim(subjects)
+  table(subjects)
+
+  # Assign features labels on column names
+  featuredData <- X
+  names(featuredData) <- features[,2]
+
+  # Keep only `mean()` and `std()` features
+  filteredData <- featuredData[,c(grep('mean\\(\\)', features[,2]), grep('std\\(\\)', features[,2]))]
+
+  # Assign subjects
+  subjectAddedData <- cbind(filteredData, subjects)
+colnames(subjectAddedData)[length(colnames(subjectAddedData))] <- 'subject' 
+
+  # Add activity labels
+  activityAddedData <- cbind(subjectAddedData, Y)
+colnames(activityAddedData)[length(colnames(activityAddedData))] <- 'activity'
+  dim(activityAddedData)
+  return(activityAddedData)
+}
+```
+
+```{r}
+trainData <- read_data('./UCI\ HAR\ Dataset/train/X_train.txt', './UCI\ HAR\ Dataset/train/Y_train.txt', './UCI\ HAR\ Dataset/train/subject_train.txt', features, activity_labels)
+dim(trainData)
+head(trainData)
+
+testData <- read_data('./UCI\ HAR\ Dataset/test/X_test.txt', './UCI\ HAR\ Dataset/test/Y_test.txt', './UCI\ HAR\ Dataset/test/subject_test.txt', features, activity_labels)
+dim(testData)
+
+data <- rbind(trainData, testData)
+```
+
+## Tidy data
+
+### Gather column features into rows
+
+```{r}
+library(tidyr)
+gatheredData <- gather(data, key=feature, value=value, -c('subject', 'activity'))
+head(gatheredData)
+```
+
+### Separate feature into three columns, `feature`, `measurement` and `axis`
+
+```{r}
+# Separate feature into three columns
+separatedData <- separate(gatheredData, feature, c("feature", "measurement", "axis"))
+
+# If axis is empty, make it MAG which means the magnitude(Euclidean norm of the X,Y,Z signals)
+separatedData$axis[separatedData$axis == ''] <- 'MAG'
+table(separatedData$axis)
+
+# Make axis as factor variable
+factoredData <- separatedData
+factoredData$axis <- as.factor(factoredData$axis)
+table(factoredData$axis)
+
+# Make measurement as factor variable
+factoredData$measurement = as.factor(factoredData$measurement)
+table(factoredData$measurement)
+
+# Make subject and activity as factor variables
+factoredData$subject <- as.factor(factoredData$subject)
+table(factoredData$subject)
+factoredData$activity <- as.factor(factoredData$activity)
+table(factoredData$activity)
+head(factoredData)
+```
+
+### Add domain
+
+```{r}
+domainedData <- factoredData
+domainedData$domain <- 'time'
+domainedData[grep('^f', domainedData$feature),]$domain <- 'frequency'
+domainedData$domain <- as.factor(domainedData$domain)
+table(domainedData$domain)
+head(domainedData)
+```
+
+### Add sensor type
+
+```{r}
+sensoredData <- domainedData
+sensoredData$sensor <- 'accelerometer'
+sensoredData[grep('Gyro', sensoredData$feature),]$sensor <- 'gyroscope'
+sensoredData$sensor <- as.factor(sensoredData$sensor)
+table(sensoredData$sensor)
+head(sensoredData)
+```
+
+### Add accelerometer type
+
+```{r}
+acceTypeData <- sensoredData
+acceTypeData$acceType <- 'NA'
+acceTypeData[acceTypeData$sensor == 'accelerometer',]$acceType = 'body'
+acceTypeData[acceTypeData$sensor == 'accelerometer' & grepl('Gravity', acceTypeData$feature),]$acceType = 'gravity'
+acceTypeData$acceType <- as.factor(acceTypeData$acceType)
+table(acceTypeData$acceType)
+head(acceTypeData)
+```
+
+### Add jerk label
+
+```{r}
+jerkData <- acceTypeData
+jerkData$jerk <- 'no'
+jerkData[grep('Jerk', jerkData$feature),]$jerk <- 'yes'
+jerkData$jerk <- as.factor(jerkData$jerk)
+table(jerkData$jerk)
+head(jerkData)
+```
+
+## Write data
+
+```{r}
+tidyData <- jerkData
+dim(tidyData)
+write.csv(tidyData, './tidy_data.csv')
+```
+
+## Calculate average data
+
+```{r}
+library(dplyr)
+grouped <- group_by(tidyData, subject, activity, measurement, axis, domain, sensor, acceType, jerk)
+meanGrouped <- summarise(grouped, mean=mean(value))
+dim(meanGrouped)
+head(meanGrouped)
+write.csv(meanGrouped, './tidy_data_grouped.csv')
+```
