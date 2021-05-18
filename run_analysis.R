@@ -125,7 +125,7 @@ head(jerkData)
 
 tidyData <- jerkData
 dim(tidyData)
-write.csv(tidyData, './tidy_data.csv')
+write.table(tidyData, './tidy_data.csv', row.name=FALSE)
 
 ## Calculate average data
 
@@ -134,5 +134,5 @@ grouped <- group_by(tidyData, subject, activity, measurement, axis, domain, sens
 meanGrouped <- summarise(grouped, mean=mean(value))
 dim(meanGrouped)
 head(meanGrouped)
-write.csv(meanGrouped, './tidy_data_grouped.csv')
+write.table(meanGrouped, './tidy_data_grouped.csv', row.name=FALSE)
 
