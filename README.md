@@ -19,5 +19,5 @@ For details, read `index.Rmd` for each steps.
 
 
 # Data Source
-[Orignal data set](https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip)
+[Original data set](https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip)
 
