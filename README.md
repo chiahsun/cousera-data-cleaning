@@ -7,6 +7,8 @@
 * `tidy_data_grouped.csv`: the tidy average data grouped by subjects, activities and variables
 * `index.Rmd`: R markdown in detailed steps for `run_analysis.R`
 
+You can also view the [github pages](https://chiahsun.github.io/cousera-data-cleaning/).
+
 # How to run
 
 ```bash
